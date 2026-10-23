@@ -1,0 +1,26 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Arial','fontSize':'16px','lineColor':'#333','edgeLabelBackground':'#e8e8e8'}}}%%
+flowchart LR
+  ST["👤 Student / master's student<br/><small>uploads thesis, self-checks</small>"]:::actor
+  SV["👤 Supervisor<br/><small>reviews shared reports</small>"]:::actor
+  NC["👤 Norm-control / Admin (School)<br/><small>templates, topic archive</small>"]:::actor
+  AU["👤 Article author / editor<br/><small>pre-submission check</small>"]:::actor
+  AR["Archive of past thesis topics<br/><small>file from School of SE</small>"]:::ext
+  SYS["<b>Scirevia</b><br/><small>checks references, citations,<br/>abstract, requirements, topic</small>"]:::sys
+  CR["Crossref API<br/><small>DOI metadata, search</small>"]:::ext
+  OA["OpenAlex API<br/><small>metadata, OA locations</small>"]:::ext
+  SS["Semantic Scholar API<br/><small>abstracts, OA PDFs</small>"]:::ext
+  WEB["doi.org / web sites<br/><small>link targets</small>"]:::ext
+  LLM["LLM API (optional)<br/><small>only with user consent</small>"]:::ext
+  ST -- "uploads document, sets<br/>requirements, reads report" --> SYS
+  SV -- "reads report" --> SYS
+  NC -- "manages templates and<br/>archive" --> SYS
+  AU -- "uploads article" --> SYS
+  AR -- "CSV/XLSX import" --> SYS
+  SYS -- "REST/JSON" --> CR
+  SYS -- "REST/JSON" --> OA
+  SYS -- "REST/JSON" --> SS
+  SYS -- "HTTP HEAD/GET" --> WEB
+  SYS -. "prompt / JSON" .-> LLM
+  classDef actor fill:#08427b,stroke:#052e56,color:#fff
+  classDef sys fill:#1168bd,stroke:#0b4884,color:#fff
+  classDef ext fill:#999,stroke:#6b6b6b,color:#fff
