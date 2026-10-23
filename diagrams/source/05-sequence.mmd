@@ -1,0 +1,32 @@
+sequenceDiagram
+  autonumber
+  actor S as Student
+  participant C as Client
+  participant API as Server (Express)
+  participant DB as MongoDB
+  participant AN as Analysis service (FastAPI)
+  participant EXT as Crossref / OpenAlex / S2
+  S->>C: Upload DOCX, choose checks, enter requirements
+  C->>API: POST /api/documents (file)
+  API->>API: extract text, abstract, references
+  API->>DB: save document
+  C->>API: POST /api/checks {documentId, checks, requirements}
+  API->>DB: create checkJob (status=queued)
+  API-->>C: 202 {jobId}
+  par Reference check (server)
+    API->>EXT: resolve DOI / HTTP HEAD each URL
+    API->>DB: save reference results
+  and Analysis (service)
+    API->>AN: POST /analyze/citations, /abstract, /requirements, /topic
+    AN->>EXT: fetch source abstracts / OA text
+    AN->>AN: retrieve fragment, NLI label, summary, rules, similarity
+    AN->>API: POST /internal/jobs/{id}/result
+    API->>DB: save analysis results
+  end
+  loop every 3–5 s
+    C->>API: GET /api/checks/{jobId}
+    API-->>C: status, progress
+  end
+  C->>API: GET /api/checks/{jobId}/report
+  API-->>C: report JSON
+  C-->>S: report with statuses and evidence

@@ -1,0 +1,53 @@
+@startuml
+left to right direction
+skinparam shadowing true
+skinparam usecase {
+  BackgroundColor #EEF4FF
+  BorderColor #1565C0
+}
+skinparam actor {
+  BorderColor #A80036
+}
+skinparam ArrowColor #A80036
+actor Student
+actor Supervisor
+actor "Article author" as Author
+actor "Norm-control /\nAdmin" as Admin
+actor "Scholarly APIs\n(Crossref, OpenAlex,\nSemantic Scholar)" as APIs <<system>>
+rectangle Scirevia {
+  usecase "UC-01 Upload document\nand choose checks" as UC01
+  usecase "UC-02 Enter requirements\n(requirements window)" as UC02
+  usecase "UC-03 Check references\n(links, DOI, metadata)" as UC03
+  usecase "UC-04 Check citations\nagainst sources" as UC04
+  usecase "UC-05 Check abstract\nvs. content" as UC05
+  usecase "UC-06 Check requirements" as UC06
+  usecase "UC-07 Check topic similarity\nwith past theses" as UC07
+  usecase "UC-08 View report" as UC08
+  usecase "UC-09 Export report (PDF)" as UC09
+  usecase "UC-10 Share report\nwith supervisor" as UC10
+  usecase "UC-11 Manage requirement\ntemplates" as UC11
+  usecase "UC-12 Upload topic archive" as UC12
+  usecase "UC-13 Manage users" as UC13
+}
+Student --> UC01
+Student --> UC02
+Student --> UC08
+Student --> UC10
+Author --> UC01
+Author --> UC02
+Author --> UC08
+Supervisor --> UC08
+Supervisor --> UC09
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+UC03 .> UC01 : <<extend>>
+UC04 .> UC01 : <<extend>>
+UC05 .> UC01 : <<extend>>
+UC06 .> UC01 : <<extend>>
+UC07 .> UC01 : <<extend>>
+UC06 .> UC02 : <<include>>
+UC09 .> UC08 : <<extend>>
+UC03 --> APIs
+UC04 --> APIs
+@enduml
