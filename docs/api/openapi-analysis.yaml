@@ -1,0 +1,251 @@
+openapi: 3.0.3
+info:
+  title: Scirevia Analysis Service API
+  version: 0.1.0-draft
+  description: |
+    Draft contract between the Node.js server and the Python/FastAPI analysis service (ADR-003, ADR-005).
+    Every check is asynchronous: the service answers 202 and later posts results to the server callback
+    POST /internal/jobs/{jobId}/result, authenticated with a shared secret.
+    Status: draft for pre-defense 1 (SCI-9).
+servers:
+  - url: http://analysis:8000
+    description: Analysis service inside Docker Compose
+security:
+  - sharedSecret: []
+
+paths:
+  /analyze/structure:
+    post:
+      summary: Extract abstract, body, in-text citations and reference list (FR-02, ADR-004)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobId, documentId, fileUrl]
+              properties:
+                jobId: { type: string }
+                documentId: { type: string }
+                fileUrl: { type: string, description: Internal URL of the file in GridFS }
+                format: { type: string, enum: [docx, pdf] }
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+
+  /analyze/references:
+    post:
+      summary: Resolve references in Crossref / OpenAlex / Semantic Scholar; flag non-existent ones (FR-11, FR-12, FR-13)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeBase'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+
+  /analyze/citations:
+    post:
+      summary: Verify that cited sources support the citations (FR-20, FR-21)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/AnalyzeBase'
+                - type: object
+                  properties:
+                    citations:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: { type: string, example: c14 }
+                          text: { type: string }
+                          refIndex: { type: integer, example: 3 }
+            example:
+              jobId: j_812
+              lang: ru
+              citations: [{ id: c14, text: "Sentence-BERT позволяет …", refIndex: 3 }]
+              references: [{ index: 3, doi: "10.18653/v1/D19-1410" }]
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+
+  /analyze/abstract:
+    post:
+      summary: Summarise the body and compare it with the author's abstract (FR-30, FR-31)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/AnalyzeBase'
+                - type: object
+                  properties:
+                    abstract: { type: string }
+                    body: { type: string }
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+
+  /analyze/requirements:
+    post:
+      summary: Rule-based and intelligent requirement checks with quotes as evidence (FR-41, FR-42)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/AnalyzeBase'
+                - type: object
+                  properties:
+                    templateItems:
+                      type: array
+                      items: { type: object, additionalProperties: true }
+                    customRequirements:
+                      type: array
+                      items: { type: string }
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+
+  /analyze/topic:
+    post:
+      summary: Top-5 similar topics from the archive of past theses (FR-50)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobId, title]
+              properties:
+                jobId: { type: string }
+                title: { type: string }
+                abstract: { type: string }
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+
+  /topics/index:
+    post:
+      summary: Rebuild the topic embedding index after an archive import (FR-51)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topics:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      title: { type: string }
+                      year: { type: integer }
+                      programme: { type: string }
+      responses:
+        '202': { description: Rebuild started }
+
+  /health:
+    get:
+      summary: Liveness and loaded model versions
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  models:
+                    type: object
+                    additionalProperties: { type: string }
+
+# Callback implemented by the server (documented here so both sides agree on the payload)
+x-callbacks:
+  checkResult:
+    post:
+      summary: POST /internal/jobs/{jobId}/result on the server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CheckResult' }
+            example:
+              check: citations
+              results:
+                - id: c14
+                  label: supported
+                  score: 0.87
+                  sourceFragment: "…derive semantically meaningful sentence embeddings…"
+                  sourceType: abstract
+                  sourceUrl: https://doi.org/10.18653/v1/D19-1410
+      responses:
+        '204': { description: Result stored }
+
+components:
+  securitySchemes:
+    sharedSecret:
+      type: apiKey
+      in: header
+      name: X-Internal-Secret
+
+  responses:
+    Accepted:
+      description: Check accepted; result will be posted to the server callback
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              jobId: { type: string }
+              status: { type: string, example: queued }
+
+  schemas:
+    AnalyzeBase:
+      type: object
+      required: [jobId]
+      properties:
+        jobId: { type: string }
+        lang: { type: string, enum: [ru, kk, en] }
+        llmConsent: { type: boolean, default: false }
+        references:
+          type: array
+          items:
+            type: object
+            properties:
+              index: { type: integer }
+              raw: { type: string }
+              doi: { type: string, nullable: true }
+              url: { type: string, nullable: true }
+    CheckResult:
+      type: object
+      required: [check, results]
+      properties:
+        check:
+          type: string
+          enum: [structure, references, citations, abstract, requirements, topic]
+        status:
+          type: string
+          enum: [done, failed]
+          default: done
+        error: { type: string, nullable: true }
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              id: { type: string }
+              label:
+                type: string
+                enum: [supported, partially_supported, not_supported, source_unavailable]
+              score: { type: number }
+              sourceFragment: { type: string }
+              sourceType: { type: string, enum: [full_text, abstract] }
+              sourceUrl: { type: string }
