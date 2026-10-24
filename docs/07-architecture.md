@@ -1,16 +1,16 @@
 # 7. Architecture and Diagrams
 
-Sources: [diagrams/src/](https://github.com/Akua49/scientific-analysis-system/tree/main/diagrams/src) (Mermaid .mmd, PlantUML .puml) · exports: [diagrams/export/](https://github.com/Akua49/scientific-analysis-system/tree/main/diagrams/export).
+Sources: [diagrams/source/](https://github.com/Akua49/scientific-analysis-system/tree/main/diagrams/source) (Mermaid .mmd, PlantUML .puml) · exports: [diagrams/](https://github.com/Akua49/scientific-analysis-system/tree/main/diagrams).
 
 ## 7.1 System context
 
-![context](../diagrams/export/01-context.png)
+![context](../diagrams/01-context.png)
 
 Scirevia is used by students, article authors, supervisors and norm-control/admin staff of the School. It calls Crossref, OpenAlex and Semantic Scholar for metadata and source texts, performs HTTP requests to link targets and doi.org, imports the archive of past thesis topics provided by the School, and calls an LLM API **only** when the user consents (NFR-05).
 
 ## 7.2 Use cases
 
-![use cases](../diagrams/export/02-use-case.png)
+![use cases](../diagrams/02-use-case.png)
 
 | Use case                                            | Requirements        | Prototype screen                  | Owner  |
 |-----------------------------------------------------|---------------------|-----------------------------------|--------|
@@ -28,7 +28,7 @@ Scirevia is used by students, article authors, supervisors and norm-control/admi
 
 ## 7.3 Components (draft)
 
-![components](../diagrams/export/03-components.png)
+![components](../diagrams/03-components.png)
 
 | Component          | Responsibility                                                  | Technology                                       | Owner             |
 |--------------------|-----------------------------------------------------------------|--------------------------------------------------|-------------------|
@@ -48,8 +48,8 @@ Scirevia is used by students, article authors, supervisors and norm-control/admi
 
 ## 7.4 Additional views
 
-- Data model: ![data](../diagrams/export/04-data-model.png)
-- Check run sequence: ![sequence](../diagrams/export/05-sequence.png)
+- Data model: ![data](../diagrams/04-data-model.png)
+- Check run sequence: ![sequence](../diagrams/05-sequence.png)
 
 ## 7.5 Interfaces between team members
 
